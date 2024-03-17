@@ -1,14 +1,14 @@
 # TaskMaster
 
-This is a minimalistic to-do app in a form of quest log from video game. It divides task into three categories: main quests, side quests and recurring quests.
+This is a minimalistic to-do app in a form of quest log from video game. It divides task into three categories: main quests, side quests and recurring quests. I started creating this app in February 2024 to practise my skills.
 
 ### Tech stack
 
-`TypeScript` `CSS` `React` `Node` `Express` `Neo4j`
+`TypeScript` `CSS` `React` `TS-Node 10.9.2` `Express` `Neo4j`
 
 ### Description
 
-Right now, only backend of the app is finished. It contains user's operations such as authentication and account deletion, and simple CRUD for quests.
+Current version contains only app's backend. It is a simple CRUD for quests and account operations (authentication, deletion etc.).
 
 ### Run
 
