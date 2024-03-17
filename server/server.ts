@@ -2,7 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import neo4j from "neo4j-driver";
+import neo4j, { Driver } from "neo4j-driver";
 import userRoutes from "./routes/userRoutes";
 import questRoutes from "./routes/questRoutes";
 require("dotenv").config({ path: "./.env" });
@@ -22,7 +22,7 @@ const PASSWORD = process.env.PASSWORD || "";
 const DB = process.env.DB || "";
 const PORT = process.env.PORT || 5000;
 
-const driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
+const driver: Driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
 app.locals.session = driver.session({ database: DB });
 
 app.use("/user", userRoutes);

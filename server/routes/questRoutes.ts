@@ -1,23 +1,24 @@
-import express from "express";
-import Category from "../enums/category";
-import State from "../enums/state";
-const router = express.Router();
+import {Router, type Request, type Response } from "express";
+import Category from "../types/category";
+import State from "../types/state";
+import Quest from "../types/quest";
+const router = Router();
 
-router.post("/new", async (req, res) => {
+router.post("/new", async (req: Request, res: Response) => {
   const session = req.app.locals.session;
-  const user = req.cookies.user;
-  const { title, dueTo, category, description } = req.body;
+  const user: string = req.cookies.user;
+  const quest: Quest = req.body;
   const defaultQuestState = State.CURRENT;
 
   if (!user) {
     return res.status(401).send({ message: "Unauthorized" });
   }
 
-  if (title === "" || title.length > 30 || !Object.values(Category).includes(category)) {
+  if (quest.title === "" || quest.title.length > 30 || !Object.values(Category).includes(quest.category)) {
     return res.status(400).send({ message: "Invalid quest title or category." });
   }
 
-  const timestamp = Date.parse(dueTo);
+  const timestamp = Date.parse(quest.dueTo);
 
   if (isNaN(timestamp) || new Date(timestamp) < new Date()) {
     return res.status(400).send({ message: "Invalid due date" });
@@ -26,7 +27,7 @@ router.post("/new", async (req, res) => {
   try {
     const questResult = await session.run(
       "MATCH (q:Quest { title: $title }) RETURN q",
-      { title }
+      { title: quest.title }
     );
 
     if (questResult.records.length > 0) {
@@ -37,7 +38,13 @@ router.post("/new", async (req, res) => {
       `MATCH (u:User { username: $user }), (c:Category { name: $category })
       MERGE (u) - [:CREATED_QUEST] -> (q:Quest { title: $title, dueTo: $dueTo, description: $description, state: $defaultQuestState })
       MERGE (q) - [:FROM_CATEGORY] -> (c)`,
-      { title, dueTo, description, defaultQuestState, user, category }
+      { title: quest.title, 
+        dueTo: quest.dueTo, 
+        description: quest.description, 
+        defaultQuestState, 
+        user, 
+        category: quest.category 
+      }
     );
 
     res.status(200).send({ message: "Quest created successfully!"});
@@ -47,9 +54,9 @@ router.post("/new", async (req, res) => {
 });
 
 // GET all or by category
-router.get("/", async (req, res) => {
+router.get("/", async (req: Request, res: Response) => {
   const session = req.app.locals.session;
-  const user = req.cookies.user;
+  const user: string = req.cookies.user;
   const category = req.query.category;
 
   if (!user) {
@@ -86,10 +93,10 @@ router.get("/", async (req, res) => {
 });
 
 // GET quest by id
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: Request, res: Response) => {
   const session = req.app.locals.session;
-  const user = req.cookies.user;
-  const id = parseInt(req.params.id);
+  const user: string = req.cookies.user;
+  const id: number = parseInt(req.params.id);
 
   if (!user) {
     res.status(401).send({ message: "Unauthorized" });
@@ -120,23 +127,23 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.put("/edit/:id", async (req, res) => {
+router.put("/edit/:id", async (req: Request, res: Response) => {
   const session = req.app.locals.session;
-  const user = req.cookies.user;
-  const id = parseInt(req.params.id);
-  const { title, dueTo, description, category } = req.body;
+  const user: string = req.cookies.user;
+  const id: number = parseInt(req.params.id);
+  const quest: Quest = req.body;
   const query = [];
 
   if (!user) {
     res.status(401).send({ message: "Unauthorized" });
   }
 
-  if (title) {
+  if (quest.title) {
     query.push("q.title = $title");
   }
 
-  if (dueTo) {
-    const timestamp = Date.parse(dueTo);
+  if (quest.dueTo) {
+    const timestamp = Date.parse(quest.dueTo);
 
     if (isNaN(timestamp) || new Date(timestamp) < new Date()) {
       return res.status(400).send({ message: "Invalid due date" });
@@ -145,11 +152,11 @@ router.put("/edit/:id", async (req, res) => {
     query.push("q.dueTo = $dueTo");
   }
 
-  if (description) {
+  if (quest.description) {
     query.push("q.description = $description");
   }
 
-  if (category && !Object.values(Category).includes(category)) {
+  if (quest.category && !Object.values(Category).includes(quest.category)) {
     return res.status(400).send({ message: "Wrong category." });
   }
 
@@ -160,14 +167,19 @@ router.put("/edit/:id", async (req, res) => {
       `MATCH (:User { username: $user }) - [:CREATED_QUEST] -> (q:Quest) WHERE id(q) = $id 
       SET ${updates}
       RETURN q`,
-      { user, id, title, dueTo, description }
+      { user, 
+        id, 
+        title: quest.title, 
+        dueTo: quest.dueTo, 
+        description: quest.description 
+      }
     );
 
     if (questResult.records.length === 0) {
       return res.status(400).send({ message: "Quest not found" });
     }
 
-    if (category) {
+    if (quest.category) {
       await session.run(
         `MATCH (q:Quest) WHERE id(q) = $id
         OPTIONAL MATCH (q) - [r:FROM_CATEGORY] -> (:Category)
@@ -175,7 +187,7 @@ router.put("/edit/:id", async (req, res) => {
         WITH q
         MATCH (c:Category { name: $category })
         MERGE (q) - [:FROM_CATEGORY] -> (c)`,
-        { id, category }
+        { id, category: quest.category }
       );
     }
 
@@ -185,10 +197,10 @@ router.put("/edit/:id", async (req, res) => {
   }
 });
 
-router.put("/done/:id", async (req, res) => {
+router.put("/done/:id", async (req: Request, res: Response) => {
   const session = req.app.locals.session;
-  const user = req.cookies.user;
-  const id = parseInt(req.params.id);
+  const user: string = req.cookies.user;
+  const id: number = parseInt(req.params.id);
   const finishedState = State.DONE;
 
   if (!user) {
@@ -213,10 +225,10 @@ router.put("/done/:id", async (req, res) => {
   }
 });
 
-router.delete("/delete/:id", async (req, res) => {
+router.delete("/delete/:id", async (req: Request, res: Response) => {
   const session = req.app.locals.session;
-  const user = req.cookies.user;
-  const id = parseInt(req.params.id);
+  const user: string = req.cookies.user;
+  const id: number = parseInt(req.params.id);
 
   if (!user) {
     res.status(401).send({ message: "Unauthorized" });
