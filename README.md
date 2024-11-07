@@ -4,9 +4,9 @@ Questmaster - To-Do App is a web application for people who want to gamify their
 
 ### Tech stack
 
-**Backend: ** `Java 21` `Spring Boot 3.3.5` `Maven` `PostgreSQL`
+**Backend:** `Java 21` `Spring Boot 3.3.5` `Maven` `PostgreSQL`
 
-**Frontend: ** `TypeScript` `Angular 18`
+**Frontend:** `TypeScript` `Angular 18`
 
 ### Description
 
